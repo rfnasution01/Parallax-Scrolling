@@ -1,56 +1,70 @@
 export const portfolio = {
 	profile: {
-		name: "Your Name",
-		role: "Creative Professional",
-		tagline: "Build a portfolio landing page that is clean, fast, and easy to customize.",
+		name: "Nara Aksara",
+		initials: "NA",
+		role: "Fresh Graduate Frontend Developer",
+		tagline: "Membangun antarmuka web yang cepat, rapi, dan terasa hidup saat discroll.",
 		description:
-			"Use this boilerplate to showcase your skills, selected projects, experience, and contact links. Replace the content in src/data/portfolio.ts with your own.",
-		location: "Your City, Country",
-		resumeUrl: "/CV.pdf",
+			"Lulusan Informatika yang fokus pada React, TypeScript, dan UI motion yang tetap aksesibel. Saya mengubah kebutuhan bisnis menjadi pengalaman digital yang jelas, ringan, dan mudah digunakan HRD maupun pengguna akhir.",
+		location: "Bandung, Indonesia",
+		resumeUrl: "/CV-Nara-Aksara.pdf",
+		availability: "Siap untuk Junior Frontend Role, internship lanjutan, dan project kolaboratif.",
 	},
 	socials: [
-		{ label: "Email", href: "mailto:hello@example.com" },
-		{ label: "LinkedIn", href: "https://linkedin.com/in/username" },
-		{ label: "GitHub", href: "https://github.com/username" },
+		{ label: "Email", href: "mailto:nara.aksara@example.com" },
+		{ label: "LinkedIn", href: "https://linkedin.com/in/naraaksara" },
+		{ label: "GitHub", href: "https://github.com/naraaksara" },
 	],
-	skills: ["Brand Strategy", "Web Design", "React", "TypeScript", "UI/UX", "Content"],
+	about: {
+		title: "Dari fresh graduate menjadi problem solver yang siap berkontribusi.",
+		body:
+			"Saya terbiasa menerjemahkan brief menjadi user flow, wireframe, hingga implementasi React yang reusable. Dalam setiap project, saya menjaga tiga hal: keterbacaan kode, performa halaman, dan detail interaksi yang membantu pengguna fokus pada informasi penting.",
+		metrics: [
+			{ value: "8+", label: "project kampus & personal" },
+			{ value: "92", label: "skor Lighthouse terbaik" },
+			{ value: "3", label: "bulan pengalaman magang" },
+		],
+	},
+	skills: [
+		{ name: "React + TypeScript", level: 88, detail: "Reusable component, hooks, state lifting" },
+		{ name: "Tailwind CSS", level: 90, detail: "Responsive layout, design token, dark UI" },
+		{ name: "UI/UX Fundamentals", level: 78, detail: "Wireframe, accessibility, user journey" },
+		{ name: "Animation & Motion", level: 72, detail: "Micro-interaction, CSS transform, parallax concept" },
+		{ name: "REST API Integration", level: 76, detail: "Fetch lifecycle, loading state, error handling" },
+		{ name: "Git Collaboration", level: 82, detail: "Branching, pull request, code review basics" },
+	],
 	projects: [
 		{
-			title: "Project One",
-			description: "A short description about the result, impact, and your role in this project.",
-			tags: ["Landing Page", "Design", "Development"],
+			title: "HireFlow Dashboard",
+			description:
+				"Dashboard rekrutmen dummy untuk memantau kandidat, pipeline interview, dan prioritas follow-up HRD dalam satu tampilan ringkas.",
+			impact: "Mengurangi waktu scanning data kandidat dari 5 menit menjadi simulasi 45 detik.",
+			tags: ["React", "TypeScript", "Dashboard"],
 			link: "#",
+			accent: "cyan",
 		},
 		{
-			title: "Project Two",
-			description: "Showcase another featured work with measurable outcomes or highlights.",
-			tags: ["Dashboard", "React", "Product"],
+			title: "KarsaLearn Landing Page",
+			description:
+				"Landing page edukasi dengan struktur hero, benefit, pricing, dan CTA yang dioptimalkan untuk konversi mobile-first.",
+			impact: "Mencapai skor Lighthouse Performance 92 pada build produksi Vite.",
+			tags: ["Tailwind", "Responsive", "UX Writing"],
 			link: "#",
+			accent: "violet",
 		},
 		{
-			title: "Project Three",
-			description: "Add case studies, client work, open-source projects, or personal experiments.",
-			tags: ["Portfolio", "Branding", "Web"],
+			title: "Motion Portfolio Concept",
+			description:
+				"Eksperimen portofolio naratif berbasis scroll dengan layer background, reveal card, dan efek depth yang tetap nyaman dibaca.",
+			impact: "Menerapkan reduced motion fallback dan layout tetap terbaca tanpa JavaScript.",
+			tags: ["Parallax", "Accessibility", "CSS"],
 			link: "#",
-		},
-	],
-	experience: [
-		{
-			role: "Your Current Role",
-			company: "Company / Client",
-			period: "2024 - Present",
-			description: "Describe your main responsibility, collaboration, and impact.",
-		},
-		{
-			role: "Previous Role",
-			company: "Company / Client",
-			period: "2022 - 2024",
-			description: "Add relevant achievements that support your personal brand.",
+			accent: "cyan-violet",
 		},
 	],
 	contact: {
-		email: "hello@example.com",
-		phone: "+62 812 0000 0000",
-		cta: "Have a project in mind? Let’s talk about how I can help.",
+		email: "nara.aksara@example.com",
+		phone: "+62 812 3456 7890",
+		cta: "Tertarik mengundang saya interview? Mari mulai dari percakapan singkat.",
 	},
 } as const;
