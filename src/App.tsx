@@ -1,45 +1,122 @@
-import { useEffect, useState } from "react";
-import { portfolio } from "@/data/portfolio";
+import { useLayoutEffect, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Lenis from "lenis";
+import { cinematicPortfolio } from "@/data/portfolio";
 
-const navItems = ["about", "skills", "projects", "contact"];
+gsap.registerPlugin(ScrollTrigger);
+
+const splitWords = (text: string) => text.split(" ").map((word, index) => <span key={`${word}-${index}`}>{word} </span>);
+const splitChars = (text: string) => text.split("").map((char, index) => <span key={`${char}-${index}`}>{char}</span>);
 
 function App() {
+	const [activePanel, setActivePanel] = useState(0);
+
+	useLayoutEffect(() => {
+		const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		const isMobile = window.innerWidth <= 1024;
+		let lenis: Lenis | undefined;
+		const lenisTicker = (time: number) => lenis?.raf(time * 1000);
+
+		if (!reduceMotion) {
+			lenis = new Lenis({
+				duration: 1.2,
+				easing: (t) => Math.min(1, 1.001 - 2 ** (-10 * t)),
+				orientation: "vertical",
+				gestureOrientation: "vertical",
+				smoothWheel: true,
+				wheelMultiplier: 1,
+				touchMultiplier: 1.5,
+			});
+			lenis.on("scroll", ScrollTrigger.update);
+			gsap.ticker.add(lenisTicker);
+			gsap.ticker.lagSmoothing(0);
+		}
+
+		const ctx = gsap.context(() => {
+			if (reduceMotion) return;
+
+			gsap.to("#hero .bg-media-container", {
+				yPercent: 15,
+				ease: "none",
+				scrollTrigger: { trigger: "#hero", start: "top top", end: "bottom top", scrub: true },
+			});
+
+			const showNav = gsap.from(".navbar", { yPercent: -100, paused: true, duration: 0.4 }).progress(1);
+			ScrollTrigger.create({
+				start: "top top",
+				end: "max",
+				onUpdate: (self) => (self.direction === 1 ? showNav.reverse() : showNav.play()),
+			});
+
+			gsap.timeline({ scrollTrigger: { trigger: "#intro", start: "top top", end: "+=100%", pin: true, scrub: 1 } })
+				.from("#intro-text span", { opacity: 0.1, stagger: 0.1, ease: "power2.out" })
+				.from("#intro .bg-media-container", { filter: "blur(20px)", scale: 1.1 }, 0);
+
+			if (!isMobile) {
+				ScrollTrigger.create({
+					trigger: "#about-pinned",
+					start: "top top",
+					end: "+=300%",
+					pin: true,
+					scrub: true,
+					onUpdate: (self) => setActivePanel(self.progress < 0.33 ? 0 : self.progress < 0.66 ? 1 : 2),
+				});
+
+				gsap.utils.toArray<HTMLElement>(".about-img").forEach((img) => {
+					gsap.fromTo(img, { scale: 0.8 }, { scale: 1, scrollTrigger: { trigger: "#about-pinned", start: "top top", end: "+=300%", scrub: true } });
+				});
+
+				const panels = gsap.utils.toArray<HTMLElement>(".work-panel");
+				gsap.to(panels, {
+					xPercent: -100 * (panels.length - 1),
+					ease: "none",
+					scrollTrigger: { trigger: "#work-horizontal", pin: true, scrub: 1, start: "top top", end: () => `+=${document.querySelector<HTMLElement>(".work-wrapper")?.offsetWidth ?? 0}` },
+				});
+				gsap.to(".scroll-progress-bar", {
+					scaleX: 1,
+					ease: "none",
+					scrollTrigger: { trigger: "#work-horizontal", start: "top top", end: () => `+=${document.querySelector<HTMLElement>(".work-wrapper")?.offsetWidth ?? 0}`, scrub: true },
+				});
+			}
+
+			gsap.utils.toArray<HTMLElement>(".process-step").forEach((step) => {
+				gsap.fromTo(step.querySelector(".bg-media-container"), { yPercent: -10 }, { yPercent: 10, ease: "none", scrollTrigger: { trigger: step, start: "top bottom", end: "bottom top", scrub: true } });
+				gsap.from(step.querySelector(".text-overlay"), { opacity: 0, y: 50, scrollTrigger: { trigger: step, start: "top center", end: "top center-=200", scrub: true } });
+			});
+
+			gsap.from("#testimonial-quote span", { opacity: 0, y: 20, stagger: 0.02, duration: 1, ease: "power2.out", scrollTrigger: { trigger: "#testimonial", start: "top center+=100", toggleActions: "play none none reverse" } });
+			gsap.from(".cta-title", { scale: 0.95, letterSpacing: "-0.06em", duration: 1.5, ease: "power3.out", scrollTrigger: { trigger: "#contact", start: "top bottom", toggleActions: "play none none reverse" } });
+		});
+
+		return () => {
+			ctx.revert();
+			gsap.ticker.remove(lenisTicker);
+			lenis?.destroy();
+			ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+		};
+	}, []);
+
 	return (
-		<main className="relative min-h-screen overflow-hidden bg-[#0B0F19] text-white">
-			<div className="pointer-events-none fixed inset-0 z-10 bg-[radial-gradient(circle_at_20%_10%,rgba(6,182,212,0.18),transparent_30%),radial-gradient(circle_at_80%_20%,rgba(139,92,246,0.16),transparent_28%)]" />
+		<main>
 			<Navbar />
 			<Hero />
-			<About />
-			<Skills />
-			<Projects />
+			<Intro />
+			<AboutPinned activePanel={activePanel} />
+			<WorkShowcase />
+			<ProcessCinematic />
+			<Testimonial />
 			<Contact />
 		</main>
 	);
 }
 
 function Navbar() {
-	const [scrolled, setScrolled] = useState(false);
-
-	useEffect(() => {
-		const onScroll = () => setScrolled(window.scrollY > 50);
-		onScroll();
-		window.addEventListener("scroll", onScroll, { passive: true });
-		return () => window.removeEventListener("scroll", onScroll);
-	}, []);
-
 	return (
-		<header className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled ? "h-16 bg-[#0B0F19]/80 shadow-lg shadow-cyan-950/20 backdrop-blur-xl" : "h-24 bg-transparent backdrop-blur-0"}`}>
-			<nav className="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
-				<a href="#hero" className="font-heading text-lg font-extrabold tracking-tight">
-					<span className="text-cyan-300">{portfolio.profile.initials}</span> / {portfolio.profile.name}
-				</a>
-				<div className="hidden gap-7 text-sm text-slate-300 md:flex">
-					{navItems.map((item) => (
-						<a key={item} href={`#${item}`} className="nav-link capitalize">
-							{item}
-						</a>
-					))}
-				</div>
+		<header className="navbar">
+			<a href="#hero" aria-label="Back to hero">AK / 2026</a>
+			<nav aria-label="Primary navigation">
+				{cinematicPortfolio.nav.map((item) => <a key={item.href} href={item.href}>{item.label}</a>)}
 			</nav>
 		</header>
 	);
@@ -47,96 +124,91 @@ function Navbar() {
 
 function Hero() {
 	return (
-		<section id="hero" className="relative isolate min-h-screen overflow-hidden px-6 pt-32">
-			<div className="parallax-bg absolute inset-0 z-10 opacity-25" />
-			<div className="pointer-events-none absolute right-[-6rem] top-28 z-20 hidden h-80 w-80 rounded-full bg-[#1E2640] blur-3xl md:block" />
-			<div className="mx-auto grid min-h-[calc(100vh-8rem)] max-w-6xl items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
-				<div className="relative z-30">
-					<p className="section-label">{portfolio.profile.role}</p>
-					<h1 className="hero-title mt-5 max-w-5xl font-heading text-5xl font-extrabold leading-[1.02] tracking-tight md:text-7xl">
-						{portfolio.profile.tagline}
-					</h1>
-					<p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 md:text-lg">{portfolio.profile.description}</p>
-					<div className="mt-9 flex flex-wrap gap-4">
-						<a className="btn-primary" href="#projects">Lihat Project</a>
-						<a className="btn-ghost" href={portfolio.profile.resumeUrl}>Download CV</a>
-					</div>
-				</div>
-				<div className="relative z-20 mx-auto w-full max-w-md">
-					<div className="initial-orb parallax-mid mx-auto flex aspect-square items-center justify-center rounded-[3rem] border border-white/10 bg-[#1E2640]/70 shadow-2xl shadow-violet-950/30">
-						<span className="font-heading text-8xl font-extrabold text-white/90 md:text-9xl">{portfolio.profile.initials}</span>
-					</div>
-					<div className="relative z-30 -mt-12 rounded-3xl border border-white/10 bg-white/[0.06] p-6 backdrop-blur-xl">
-						<p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Available for</p>
-						<h2 className="mt-3 text-xl font-semibold leading-7">{portfolio.profile.availability}</h2>
-						<div className="mt-5 grid gap-2 text-sm text-slate-300">
-							<p>{portfolio.profile.location}</p>
-							{portfolio.socials.map((social) => <a key={social.label} href={social.href} className="text-cyan-200 transition hover:text-violet-300">{social.label} →</a>)}
-						</div>
-					</div>
-				</div>
+		<section id="hero" className="cinematic-section hero-frame">
+			<div className="bg-media-container"><img src={cinematicPortfolio.media.hero} alt="Cinematic camera crew in moody light" /></div>
+			<div className="section-gradient" />
+			<div className="hero-content text-overlay">
+				<p>{cinematicPortfolio.profile.caption}</p>
+				<h1>{cinematicPortfolio.profile.name}</h1>
+				<span>{cinematicPortfolio.profile.role}</span>
 			</div>
 		</section>
 	);
 }
 
-function About() {
-	const words = portfolio.about.body.split(" ");
+function Intro() {
 	return (
-		<section id="about" className="section-shell">
-			<p className="section-label">About</p>
-			<div className="mt-6 grid gap-10 lg:grid-cols-[0.85fr_1.15fr]">
-				<h2 className="section-title reveal-up">{portfolio.about.title}</h2>
-				<div>
-					<p className="word-reveal text-lg leading-9 text-slate-300">{words.map((word, index) => <span key={`${word}-${index}`}>{word} </span>)}</p>
-					<div className="mt-9 grid gap-4 sm:grid-cols-3">
-						{portfolio.about.metrics.map((metric) => <div key={metric.label} className="depth-card p-5"><strong className="font-heading text-3xl text-cyan-300">{metric.value}</strong><p className="mt-2 text-sm text-slate-400">{metric.label}</p></div>)}
-					</div>
-				</div>
-			</div>
+		<section id="intro" className="cinematic-section intro-story">
+			<div className="bg-media-container"><img src={cinematicPortfolio.media.intro} alt="Director watching a monitor on a film set" /></div>
+			<div className="section-gradient" />
+			<p id="intro-text" className="text-overlay">{splitWords(cinematicPortfolio.intro.copy)}</p>
 		</section>
 	);
 }
 
-function Skills() {
+function AboutPinned({ activePanel }: { activePanel: number }) {
 	return (
-		<section id="skills" className="relative border-y border-white/10 bg-white/[0.03]">
-			<div className="section-shell">
-				<p className="section-label">Toolkit</p>
-				<h2 className="section-title mt-6 reveal-up">Skill yang relevan untuk role frontend junior.</h2>
-				<div className="mt-10 grid gap-5 md:grid-cols-2">
-					{portfolio.skills.map((skill) => (
-						<div key={skill.name} className="depth-card group p-6">
-							<div className="flex items-start justify-between gap-4">
-								<div><h3 className="text-xl font-semibold">{skill.name}</h3><p className="mt-2 text-sm text-slate-400">{skill.detail}</p></div>
-								<span className="opacity-0 text-sm font-semibold text-cyan-300 transition group-hover:opacity-100">{skill.level}%</span>
-							</div>
-							<div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-800"><div className="skill-fill h-full rounded-full bg-gradient-to-r from-cyan-400 to-violet-500" style={{ width: `${skill.level}%` }} /></div>
-						</div>
-					))}
-				</div>
-			</div>
-		</section>
-	);
-}
-
-function Projects() {
-	return (
-		<section id="projects" className="section-shell">
-			<p className="section-label">Projects</p>
-			<h2 className="section-title mt-6 reveal-up">Bukti kemampuan melalui card reveal interaktif.</h2>
-			<div className="mt-10 grid gap-6 lg:grid-cols-3">
-				{portfolio.projects.map((project, index) => (
-					<a key={project.title} href={project.link} className="project-card group">
-						<div className="project-visual"><div className={`project-gradient accent-${project.accent}`} /><span>0{index + 1}</span></div>
-						<div className="p-6">
-							<h3 className="text-xl font-semibold">{project.title}</h3>
-							<p className="mt-4 text-sm leading-6 text-slate-300">{project.description}</p>
-							<p className="mt-4 translate-y-2 text-sm font-medium text-cyan-200 opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100">{project.impact}</p>
-							<div className="mt-6 flex flex-wrap gap-2">{project.tags.map((tag) => <span key={tag} className="rounded-full bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100">{tag}</span>)}</div>
-						</div>
-					</a>
+		<section id="about-pinned" className="cinematic-section about-pinned">
+			<div className="about-copy text-overlay">
+				{cinematicPortfolio.aboutPanels.map((panel, index) => (
+					<article key={panel.kicker} className={activePanel === index ? "is-active" : ""}>
+						<p>{panel.kicker}</p>
+						<h2>{panel.text}</h2>
+					</article>
 				))}
+			</div>
+			<div className="about-visuals">
+				{cinematicPortfolio.aboutPanels.map((panel, index) => (
+					<img key={panel.image} className={`about-img ${activePanel === index ? "is-active" : ""}`} src={panel.image} alt={`${panel.kicker.toLowerCase()} visual study`} />
+				))}
+			</div>
+		</section>
+	);
+}
+
+function WorkShowcase() {
+	return (
+		<section id="work-horizontal" className="cinematic-section work-horizontal">
+			<div className="progress-track"><div className="scroll-progress-bar" /></div>
+			<div className="work-wrapper">
+				{cinematicPortfolio.works.map((work) => (
+					<article key={work.title} className="work-panel">
+						<img src={work.image} alt={`${work.title} ${work.meta} still`} />
+						<div className="section-gradient" />
+						<div className="work-copy text-overlay">
+							<p>{work.meta}</p>
+							<h2>{work.title}</h2>
+							<a href={work.link}>Request treatment</a>
+						</div>
+					</article>
+				))}
+			</div>
+		</section>
+	);
+}
+
+function ProcessCinematic() {
+	return (
+		<section className="process-cinematic" aria-label="Production process">
+			{cinematicPortfolio.process.map((step) => (
+				<article key={step.copy} className="cinematic-section process-step">
+					<div className="bg-media-container"><img src={step.image} alt={`${step.copy.split("—")[0]} production stage`} /></div>
+					<div className="section-gradient" />
+					<h2 className="text-overlay">{step.copy}</h2>
+				</article>
+			))}
+		</section>
+	);
+}
+
+function Testimonial() {
+	return (
+		<section id="testimonial" className="cinematic-section testimonial-anthem">
+			<div className="bg-media-container"><video src={cinematicPortfolio.media.testimonialVideo} autoPlay muted loop playsInline /></div>
+			<div className="section-gradient" />
+			<div className="text-overlay">
+				<blockquote id="testimonial-quote">{splitChars(cinematicPortfolio.testimonial.quote)}</blockquote>
+				<cite>{cinematicPortfolio.testimonial.credit}</cite>
 			</div>
 		</section>
 	);
@@ -144,15 +216,15 @@ function Projects() {
 
 function Contact() {
 	return (
-		<section id="contact" className="relative px-6 py-24">
-			<div className="contact-magnet absolute inset-x-0 bottom-0 z-10 h-72 rounded-t-[50%] bg-gradient-to-t from-cyan-500/15 to-transparent" />
-			<div className="relative z-30 mx-auto max-w-6xl rounded-[2rem] border border-cyan-300/20 bg-[#10182A]/90 p-8 shadow-2xl shadow-cyan-950/40 backdrop-blur-xl md:p-12">
-				<p className="section-label">Contact</p>
-				<h2 className="mt-4 max-w-3xl font-heading text-4xl font-bold tracking-tight md:text-5xl">{portfolio.contact.cta}</h2>
-				<div className="mt-8 flex flex-wrap gap-4">
-					<a className="btn-primary" href={`mailto:${portfolio.contact.email}`}>Email saya</a>
-					<a className="btn-ghost" href={`tel:${portfolio.contact.phone}`}>{portfolio.contact.phone}</a>
-				</div>
+		<section id="contact" className="cinematic-section contact-finale">
+			<div className="bg-media-container"><img src={cinematicPortfolio.media.contact} alt="Dark cinematic landscape at dawn" /></div>
+			<div className="section-gradient" />
+			<div className="text-overlay">
+				<h2 className="cta-title">{cinematicPortfolio.contact.title}</h2>
+				<a className="cta-button" href={cinematicPortfolio.contact.briefHref}>{cinematicPortfolio.contact.cta}</a>
+				<footer>
+					{cinematicPortfolio.contact.links.map((link) => <a key={link.label} href={link.href}>{link.label}</a>)}
+				</footer>
 			</div>
 		</section>
 	);
